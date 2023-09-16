@@ -1,0 +1,3 @@
+C:/work stuff/uni_git/DBMS_project/build-dir/CMakeFiles/DataBase.dir
+C:/work stuff/uni_git/DBMS_project/build-dir/CMakeFiles/edit_cache.dir
+C:/work stuff/uni_git/DBMS_project/build-dir/CMakeFiles/rebuild_cache.dir
