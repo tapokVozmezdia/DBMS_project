@@ -1,0 +1,5 @@
+cargo_id origin destination weight shipping_company package_volume fragile_cargo 
+487 Mexico-City San-Francisco 567lbs Amazon 3m^3 no 
+09 London Berlin 1000kg Bazinga 6m^3 yes 
+1001 Saint-Peterburg Vladivostok 5.23*10^3kg Pochta_Rossii 50m^3 no 
+551 Tokyo New-York 45.356kg DHL 0.65m^3 yes 
