@@ -44,6 +44,14 @@ ManualCommand strToManual(const std::string& str_command)
     {
         return DBMS_MANUAL_REMOVE_BY_PR_KEY;
     }
+    if (str_command == "SET")
+    {
+        return DBMS_MANUAL_SET_VALUE;
+    }
+    if (str_command == "END")
+    {
+        return DBMS_MANUAL_END_CYCLE;
+    }
     return DBMS_MANUAL_BAD_COMMAND;
 }
 
@@ -64,7 +72,7 @@ DataBaseManagingSystem::DataBaseManagingSystem(const std::string& path)
             std::ofstream dataBaseCreator(path);
             std::cout << "Type in new table's argument structure. " <<
                 "Example: name age gender favourite_colour\n";
-            std::cout << "NOTE: multi-word args shoul be in form this_is_arg, " 
+            std::cout << "NOTE: multi-word args should be in form this_is_arg, " 
                 << "ALL INPUT MUST BE IN ONE LINE" << std::endl;
             std::string firstLine;
             std::string moreDump;
@@ -76,7 +84,7 @@ DataBaseManagingSystem::DataBaseManagingSystem(const std::string& path)
             dataBaseChecker.open(path);
         }
         else{
-            this->~DataBaseManagingSystem();
+            this->shut_off_flag = true;
             return;
         }
     }
@@ -90,6 +98,16 @@ DataBaseManagingSystem::DataBaseManagingSystem(const std::string& path)
     //std::cout << "NUM OF ARGS: " << this->numberOfArguments << std::endl;
     dataBaseChecker.close();
     this->tablePath = path;
+}
+
+bool DataBaseManagingSystem::is_active()
+{
+    if (this->shut_off_flag)
+    {
+        std::cout << "Closing database..." << std::endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(800));
+    }
+    return !(this->shut_off_flag);
 }
 
 DataBaseManagingSystem::~DataBaseManagingSystem()
@@ -144,12 +162,101 @@ std::string DataBaseManagingSystem::getByKey(const unsigned int key)
             getline(s, tmp, ' ');
             if (stoi(tmp) == key)
             {
+                dataBase.close();
                 return line;
             }
         }
         std::cout << "exception by identifier " << key << std::endl;
         error("NO ELEMENT BY THAT IDENTIFIER EXISTS");
     }
+    dataBase.close();
+    return "";
+}
+
+void DataBaseManagingSystem::changeByKey(const unsigned int key, std::string& param, std::string to_what)
+{
+    std::string line;
+    std::ifstream dataBase;
+    dataBase.open(this->tablePath);
+    bool flag = false;
+    std::list<std::list<std::string>> data;
+    if (dataBase.is_open())
+    {
+        std::string dump;
+        std::string word_d;
+        getline(dataBase, dump);
+        std::stringstream dump_handler(dump);
+        std::stringstream param_scale(this->tableStructure);
+        std::list<std::string> dump_list;
+        while(getline(dump_handler, word_d, ' '))
+        {
+            dump_list.push_back(word_d);
+        }
+        data.push_back(dump_list);
+
+        while(getline(dataBase, line))
+        {
+            std::string tmp;
+            std::stringstream s(line);
+            getline(s, tmp, ' ');
+            if (stoi(tmp) != key)
+            {
+                std::list<std::string> tmp_list;
+                tmp_list.push_back(tmp);
+                while(getline(s, tmp, ' '))
+                {
+                    tmp_list.push_back(tmp);
+                }
+                data.push_back(tmp_list);
+            }
+            else
+            {
+                std::list<std::string> tmp_list;
+                tmp_list.push_back(tmp);
+                std::string param_in_scale;
+                getline(param_scale, param_in_scale, ' ');
+                while(getline(s, tmp, ' '))
+                {
+                    getline(param_scale, param_in_scale, ' ');
+                    if (tmp == param || param_in_scale == param)
+                    {
+                        tmp_list.push_back(to_what);
+                    }
+                    else
+                    {
+                        tmp_list.push_back(tmp);
+                    }
+                }
+                data.push_back(tmp_list);
+                flag = true;
+            }
+        }
+        if (!flag)
+        {
+            std::cout << "exception by identifier " << key << std::endl;
+            error("NO ELEMENT BY THAT IDENTIFIER EXISTS");
+            dataBase.close();
+            return;
+        }
+    }
+    dataBase.close();
+    std::ofstream dataWriter;
+    dataWriter.open(this->tablePath);
+    if (dataWriter.is_open())
+    {
+        if (data.size() != 0)
+        {
+            for (auto i = data.begin(); i != data.end(); ++i)
+            {
+                for (auto j = (*i).begin(); j != (*i).end(); ++j)
+                {
+                    dataWriter << (*j) << " ";
+                }
+                dataWriter << std::endl;
+            }
+        }
+    }
+    dataWriter.close();
 }
 
 void DataBaseManagingSystem::manuallyAddNewLine(const std::string& new_line)
@@ -350,13 +457,17 @@ void DataBaseManagingSystem::commandContextMenu()
         }
         case DBMS_ENTER_COMMAND_MANUALLY:
         {
-            std::string newCommand;
-            getline(std::cin, newCommand);
-            if (newCommand.length() == 0)
+            this->in_manual = true;
+            while(this->in_manual)
             {
+                std::string newCommand;
                 getline(std::cin, newCommand);
+                if (newCommand.length() == 0)
+                {
+                    getline(std::cin, newCommand);
+                }
+                this->manualCommandInput(newCommand);
             }
-            this->manualCommandInput(newCommand);
             break;
         }
         case DBMS_CLEAR_CONSOLE:
@@ -382,10 +493,12 @@ void DataBaseManagingSystem::manualCommandInput(const std::string& command)
     std::string id_str;
     std::string suppline;
     unsigned int id;
+    std::string param1;
+    std::string param2;
 
     getline(s, keyWord, ' ');
     ManualCommand en_command = strToManual(keyWord);
-    std::cout << "KEY WORD: " << keyWord << std::endl;
+    //std::cout << "KEY WORD: " << keyWord << std::endl;
     switch(en_command)
     {
         case DBMS_MANUAL_BAD_COMMAND:
@@ -420,6 +533,24 @@ void DataBaseManagingSystem::manualCommandInput(const std::string& command)
                 this->manuallyRemoveByKey(id);
             }
             break;
+        }
+        case DBMS_MANUAL_SET_VALUE: // SET id param to_what
+        {
+            getline(s, id_str, ' ');
+            getline(s, param1, ' ');
+            getline(s, param2);
+            if (id_str.length() != 0 && param1.length() != 0 &&
+                param2.length() != 0)
+                {
+                    id = stoi(id_str);
+                    this->changeByKey(id, param1, param2);
+                }
+            break;
+        }
+        case DBMS_MANUAL_END_CYCLE:
+        {
+            this->in_manual = false;
+            return;
         }
         default:
             error("BAD COMMAND GIVEN MANUALLY");

@@ -30,6 +30,8 @@ typedef enum
     DBMS_MANUAL_GET_BY_PR_KEY,
     DBMS_MANUAL_ADD_NEW,
     DBMS_MANUAL_REMOVE_BY_PR_KEY,
+    DBMS_MANUAL_SET_VALUE,
+    DBMS_MANUAL_END_CYCLE
 } ManualCommand;
 
 std::string commandToStr(SelectCommand command);
@@ -42,17 +44,22 @@ class DataBaseManagingSystem
         ~DataBaseManagingSystem();
 
         void awaitCommand();
+        bool is_active();
 
     private:
         std::string tablePath;
         std::string tableStructure;
         unsigned int numberOfArguments = 0;
         unsigned int numberOfMembers = 0;
+        
+        bool in_manual = false;
+        bool shut_off_flag = false;
 
         void commandContextMenu();
         void manualCommandInput(const std::string& command);
 
         std::string getByKey(const unsigned int key);
+        void changeByKey(const unsigned int key, std::string& param, std::string to_what);
         void manuallyAddNewLine(const std::string& new_line);
         void manuallyRemoveByKey(const unsigned int key);
 
