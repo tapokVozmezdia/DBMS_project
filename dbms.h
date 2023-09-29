@@ -16,8 +16,8 @@
 typedef enum
 {
     DBMS_BAD_COMMAND = 0,
-    DBMS_PRINT_TABLE,
     DBMS_ADD_NEW,
+    DBMS_REMOVE_BY_LINE_NUM,
     DBMS_REMOVE_BY_PR_KEY,
     DBMS_ENTER_COMMAND_MANUALLY,
     DBMS_CLEAR_CONSOLE,
@@ -27,6 +27,7 @@ typedef enum
 typedef enum
 {
     DBMS_MANUAL_BAD_COMMAND = 0,
+    DBMS_MANUAL_PRINT_TABLE,
     DBMS_MANUAL_GET_BY_PR_KEY,
     DBMS_MANUAL_ADD_NEW,
     DBMS_MANUAL_REMOVE_BY_PR_KEY,
@@ -64,6 +65,6 @@ class DataBaseManagingSystem
         void manuallyRemoveByKey(const unsigned int key);
 
         void addNewLine();
-        void removeLineByKey(const unsigned int pr_key);
+        void removeLineByNum(const unsigned int pr_key);
         void displayTable();
 };

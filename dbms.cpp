@@ -15,12 +15,12 @@ std::string commandToStr(SelectCommand command)
             return "BAD COMMAND";
         case DBMS_CLOSE_DATA_BASE:
             return "CLOSE DATA BASE";
-        case DBMS_PRINT_TABLE:
-            return "PRINT TABLE";
         case DBMS_ADD_NEW:
-            return "ADD NEW";
+            return "ADD NEW LINE";
+        case DBMS_REMOVE_BY_LINE_NUM:
+            return "REMOVE LINE BY LINE NUMBER";
         case DBMS_REMOVE_BY_PR_KEY:
-            return "REMOVE BY PRIMARY KEY";
+            return "REMOVE LINE BY PRIMARY KEY";
         case DBMS_ENTER_COMMAND_MANUALLY:
             return "ENTER COMMAND MANUALLY";
         case DBMS_CLEAR_CONSOLE:
@@ -32,6 +32,10 @@ std::string commandToStr(SelectCommand command)
 
 ManualCommand strToManual(const std::string& str_command)
 {
+    if (str_command == "PRINT_TABLE")
+    {
+        return DBMS_MANUAL_PRINT_TABLE;
+    }
     if (str_command == "GET")
     {
         return DBMS_MANUAL_GET_BY_PR_KEY;
@@ -325,6 +329,7 @@ void DataBaseManagingSystem::manuallyRemoveByKey(const unsigned int key)
         {
             std::cout << "exception by identifier " << key << std::endl;
             error("NO ELEMENT BY THAT IDENTIFIER EXISTS");
+            dataBase.close();
             return;
         }
     }
@@ -371,7 +376,7 @@ void DataBaseManagingSystem::addNewLine()
     dataBase.close();
 }
 
-void DataBaseManagingSystem::removeLineByKey(const unsigned int pr_key)
+void DataBaseManagingSystem::removeLineByNum(const unsigned int pr_key)
 {
     if (pr_key > this->numberOfMembers || pr_key == 0)
     {
@@ -445,24 +450,25 @@ void DataBaseManagingSystem::commandContextMenu()
             std::cout << commandToStr(command) << std::endl;
             break;
         }
-        case DBMS_PRINT_TABLE:
-        {
-            std::cout << "\n";
-            this->displayTable();
-            std::cout << "\n";
-            break;
-        }
         case DBMS_ADD_NEW:
         {
             this->addNewLine();
             break;
         }
-        case DBMS_REMOVE_BY_PR_KEY:
+        case DBMS_REMOVE_BY_LINE_NUM:
         {
-            std::cout << "ENTER THE POSITION YOU WANT TO REMOVE (pr_key):   ";
+            std::cout << "ENTER THE POSITION YOU WANT TO REMOVE (line number):   ";
             unsigned int pr_key_input;
             std::cin >> pr_key_input;
-            this->removeLineByKey(pr_key_input);
+            this->removeLineByNum(pr_key_input);
+            break;
+        }
+        case DBMS_REMOVE_BY_PR_KEY:
+        {
+            std::cout << "ENTER THE PRIMARY KEY (ID) OF AN ELEMENT THAT YOU WANT TO REMOVE:   ";
+            unsigned int pr_key_input;
+            std::cin >> pr_key_input;
+            this->manuallyRemoveByKey(pr_key_input);
             break;
         }
         case DBMS_ENTER_COMMAND_MANUALLY:
@@ -514,6 +520,20 @@ void DataBaseManagingSystem::manualCommandInput(const std::string& command)
         case DBMS_MANUAL_BAD_COMMAND:
         {
             error("BAD COMMAND GIVEN MANUALLY");
+            break;
+        }
+        case DBMS_MANUAL_PRINT_TABLE:
+        {
+            std::cout << "WARNING: THE DATA MAY NOT BE DISPLAYED PROPERLY, ARE YOU SURE?" << std::endl;
+            std::cout << "[Y/N]: ";
+            std::string choice;
+            std::cin >> choice;
+            if (choice == "Y" || choice == "YES" || choice == "yes")
+            {
+                std::cout << "\n";
+                this->displayTable();
+                std::cout << "\n";
+            }
             break;
         }
         case DBMS_MANUAL_GET_BY_PR_KEY:
