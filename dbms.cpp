@@ -150,6 +150,10 @@ std::string DataBaseManagingSystem::getByKey(const unsigned int key)
     std::string line;
     std::ifstream dataBase;
     dataBase.open(this->tablePath);
+    std::stringstream t_structure(this->tableStructure);
+    std::string r_answer = "";
+    std::string tmp2;
+    getline(t_structure, tmp2, ' ');
 
     if (dataBase.is_open())
     {
@@ -162,8 +166,14 @@ std::string DataBaseManagingSystem::getByKey(const unsigned int key)
             getline(s, tmp, ' ');
             if (stoi(tmp) == key)
             {
+                r_answer = tmp2 + ": " + tmp;
+                while(getline(s, tmp, ' '))
+                {
+                    getline(t_structure, tmp2, ' ');
+                    r_answer += ("\n" + tmp2 + ": " + tmp);
+                }
                 dataBase.close();
-                return line;
+                return r_answer;
             }
         }
         std::cout << "exception by identifier " << key << std::endl;
