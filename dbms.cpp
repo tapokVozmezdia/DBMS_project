@@ -21,11 +21,30 @@ std::string commandToStr(SelectCommand command)
             return "ADD NEW";
         case DBMS_REMOVE_BY_PR_KEY:
             return "REMOVE BY PRIMARY KEY";
+        case DBMS_ENTER_COMMAND_MANUALLY:
+            return "ENTER COMMAND MANUALLY";
         case DBMS_CLEAR_CONSOLE:
             return "CLEAR CONSOLE";
         default:
             return "INVALID COMMAND";
     }
+}
+
+ManualCommand strToManual(const std::string& str_command)
+{
+    if (str_command == "GET")
+    {
+        return DBMS_MANUAL_GET_BY_PR_KEY;
+    }
+    if (str_command == "PUT")
+    {
+        return DBMS_MANUAL_ADD_NEW;
+    }
+    if (str_command == "REMOVE")
+    {
+        return DBMS_MANUAL_REMOVE_BY_PR_KEY;
+    }
+    return DBMS_MANUAL_BAD_COMMAND;
 }
 
 DataBaseManagingSystem::DataBaseManagingSystem(const std::string& path)
@@ -88,11 +107,11 @@ void DataBaseManagingSystem::displayTable()
     {
         if (lineNum != 0)
         {
-            std::cout << "\t" << lineNum;
+            std::cout << "     " << lineNum;
         }
         else
         {
-            std::cout << "\tpr_key";
+            std::cout << "pr_key";
         }
         std::string tmp;
         std::stringstream s(line);
@@ -106,6 +125,111 @@ void DataBaseManagingSystem::displayTable()
         this->numberOfMembers++;
     }
     dataBase.close();
+}
+
+std::string DataBaseManagingSystem::getByKey(const unsigned int key)
+{
+    std::string line;
+    std::ifstream dataBase;
+    dataBase.open(this->tablePath);
+
+    if (dataBase.is_open())
+    {
+        std::string dump;
+        getline(dataBase, dump);
+        while(getline(dataBase, line))
+        {
+            std::string tmp;
+            std::stringstream s(line);
+            getline(s, tmp, ' ');
+            if (stoi(tmp) == key)
+            {
+                return line;
+            }
+        }
+        std::cout << "exception by identifier " << key << std::endl;
+        error("NO ELEMENT BY THAT IDENTIFIER EXISTS");
+    }
+}
+
+void DataBaseManagingSystem::manuallyAddNewLine(const std::string& new_line)
+{
+    std::ofstream dataBase;
+    dataBase.open(this->tablePath, std::ios::app);
+    if (dataBase.is_open())
+    {
+        dataBase << new_line << std::endl;
+        this->numberOfMembers++;
+    }
+    dataBase.close();
+}
+
+void DataBaseManagingSystem::manuallyRemoveByKey(const unsigned int key)
+{
+    std::string line;
+    std::ifstream dataBase;
+    dataBase.open(this->tablePath);
+    bool flag = false;
+    std::list<std::list<std::string>> data;
+    if (dataBase.is_open())
+    {
+        std::string dump;
+        std::string word_d;
+        getline(dataBase, dump);
+        std::stringstream dump_handler(dump);
+        std::list<std::string> dump_list;
+        while(getline(dump_handler, word_d, ' '))
+        {
+            dump_list.push_back(word_d);
+        }
+        data.push_back(dump_list);
+
+        while(getline(dataBase, line))
+        {
+            std::string tmp;
+            std::stringstream s(line);
+            getline(s, tmp, ' ');
+            if (stoi(tmp) != key)
+            {
+                std::list<std::string> tmp_list;
+                tmp_list.push_back(tmp);
+                while(getline(s, tmp, ' '))
+                {
+                    tmp_list.push_back(tmp);
+                }
+                data.push_back(tmp_list);
+            }
+            else
+            {
+                flag = true;
+            }
+        }
+        if (!flag)
+        {
+            std::cout << "exception by identifier " << key << std::endl;
+            error("NO ELEMENT BY THAT IDENTIFIER EXISTS");
+            return;
+        }
+    }
+    dataBase.close();
+    std::ofstream dataWriter;
+    dataWriter.open(this->tablePath);
+    if (dataWriter.is_open())
+    {
+        if (data.size() != 0)
+        {
+            for (auto i = data.begin(); i != data.end(); ++i)
+            {
+                for (auto j = (*i).begin(); j != (*i).end(); ++j)
+                {
+                    dataWriter << (*j) << " ";
+                }
+                dataWriter << std::endl;
+            }
+        }
+    }
+    this->numberOfMembers--;
+    dataWriter.close();
 }
 
 void DataBaseManagingSystem::addNewLine()
@@ -125,13 +249,12 @@ void DataBaseManagingSystem::addNewLine()
             dataBase << arg << " ";
         }
         dataBase << std::endl;
+        this->numberOfMembers++;
     }
-
-    this->numberOfMembers++;
     dataBase.close();
 }
 
-void DataBaseManagingSystem::removeLineByKey(unsigned int pr_key)
+void DataBaseManagingSystem::removeLineByKey(const unsigned int pr_key)
 {
     if (pr_key > this->numberOfMembers || pr_key == 0)
     {
@@ -185,6 +308,11 @@ void DataBaseManagingSystem::removeLineByKey(unsigned int pr_key)
 
 void DataBaseManagingSystem::awaitCommand()
 {
+    this->commandContextMenu();
+}
+
+void DataBaseManagingSystem::commandContextMenu()
+{
     std::cout << "COMMAND MENU" << std::endl;
     for (int i = 1; i <= DBMS_CLOSE_DATA_BASE; ++i)
     {
@@ -196,30 +324,105 @@ void DataBaseManagingSystem::awaitCommand()
     switch(command)
     {
         case DBMS_BAD_COMMAND:
+        {
             std::cout << commandToStr(command) << std::endl;
             break;
+        }
         case DBMS_PRINT_TABLE:
+        {
             std::cout << "\n";
             this->displayTable();
             std::cout << "\n";
             break;
+        }
         case DBMS_ADD_NEW:
+        {
             this->addNewLine();
             break;
+        }
         case DBMS_REMOVE_BY_PR_KEY:
+        {
             std::cout << "ENTER THE POSITION YOU WANT TO REMOVE (pr_key):   ";
             unsigned int pr_key_input;
             std::cin >> pr_key_input;
             this->removeLineByKey(pr_key_input);
             break;
+        }
+        case DBMS_ENTER_COMMAND_MANUALLY:
+        {
+            std::string newCommand;
+            getline(std::cin, newCommand);
+            if (newCommand.length() == 0)
+            {
+                getline(std::cin, newCommand);
+            }
+            this->manualCommandInput(newCommand);
+            break;
+        }
         case DBMS_CLEAR_CONSOLE:
+        {
             system("cls");
             break;
+        }
         case DBMS_CLOSE_DATA_BASE:
+        {
             std::cout << "Closing database..." << std::endl;
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
             exit(0);
+        }
         default:
+            break;
+    }
+}
+
+void DataBaseManagingSystem::manualCommandInput(const std::string& command)
+{
+    std::stringstream s(command);
+    std::string keyWord;
+    std::string id_str;
+    std::string suppline;
+    unsigned int id;
+
+    getline(s, keyWord, ' ');
+    ManualCommand en_command = strToManual(keyWord);
+    std::cout << "KEY WORD: " << keyWord << std::endl;
+    switch(en_command)
+    {
+        case DBMS_MANUAL_BAD_COMMAND:
+        {
+            error("BAD COMMAND GIVEN MANUALLY");
+            break;
+        }
+        case DBMS_MANUAL_GET_BY_PR_KEY:
+        {
+            getline(s, id_str, ' ');
+            if (id_str.length() != 0)
+            {
+                //std::cout << id_str << std::endl;
+                id = stoi(id_str);
+                std::cout << this->getByKey(id) << std::endl;
+            }
+            break;
+        }
+        case DBMS_MANUAL_ADD_NEW:
+        {
+            getline(s, suppline);
+            this->manuallyAddNewLine(suppline);
+            break;
+        }
+        case DBMS_MANUAL_REMOVE_BY_PR_KEY:
+        {
+            getline(s, id_str, ' ');
+            if (id_str.length() != 0)
+            {
+                //std::cout << id_str << std::endl;
+                id = stoi(id_str);
+                this->manuallyRemoveByKey(id);
+            }
+            break;
+        }
+        default:
+            error("BAD COMMAND GIVEN MANUALLY");
             break;
     }
 }
