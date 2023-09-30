@@ -129,17 +129,17 @@ void DataBaseManagingSystem::displayTable()
     {
         if (lineNum != 0)
         {
-            std::cout << "     " << lineNum;
+            std::cout << "       " << lineNum;
         }
         else
         {
-            std::cout << "pr_key";
+            std::cout << "line_num";
         }
         std::string tmp;
         std::stringstream s(line);
         while(getline(s, tmp, ' '))
         {
-            std::cout << "\t\t" << tmp;
+            std::cout << "\t" << tmp << "\t";
         }
         std::cout << std::endl;
         //std::cout << line << std::endl;
